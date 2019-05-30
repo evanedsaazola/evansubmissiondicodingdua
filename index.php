@@ -11,6 +11,8 @@ use MicrosoftAzure\Storage\Blob\Models\PublicAccessType;
 
 $connectionString = "DefaultEndpointsProtocol=https;AccountName=evansubmissionduastorage;AccountKey=D23NljMevP00ja9D/m3VAJ6DRfdYK1wUIfiR35jGc7x/Ydhz+BSamoTZniLqnVR3Un3gQouLDWECx7Wy508Jxg==;EndpointSuffix=core.windows.net";
 
+$blobClient = BlobRestProxy::createBlobService($connectionString);
+
 $createContainerOptions = new CreateContainerOptions();
 $createContainerOptions->setPublicAccess(PublicAccessType::CONTAINER_AND_BLOBS);
 $createContainerOptions->addMetaData("key1", "value1");
@@ -20,7 +22,6 @@ $containerName = "evansubmitdua".generateRandomString();
 
 $blobClient->createContainer($containerName, $createContainerOptions);
 
-$blobClient = BlobRestProxy::createBlobService($connectionString);
 if (isset($_POST['submit'])) {
     $fileToUpload = strtolower($_FILES["fileToUpload"]["name"]);
     $content = fopen($_FILES["fileToUpload"]["tmp_name"], "r");
