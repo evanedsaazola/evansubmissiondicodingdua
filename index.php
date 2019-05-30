@@ -1,3 +1,17 @@
+<html>
+<head>
+    <title>Analyze Sample</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+</head>
+<body>
+
+Upload picture that need to be analyzed :
+        <form action="index.php" method="post" enctype="multipart/form-data">
+        <input type="file" name="fileToUpload" accept=".jpeg,.jpg,.png" required="" id="fileToUpload">
+        <input type="submit" name="submit" value="Upload">
+        </form>
+
+
 <?php
 
 require_once 'vendor/autoload.php';
@@ -26,7 +40,7 @@ $fileToUpload = false;
 
 if (isset($_POST['submit'])) {
 
-    $fileToUpload = $_FILES["fileToUpload"]["name"];
+    $fileToUpload = strtolower($_FILES["fileToUpload"]["name"]); 
     $content = fopen($_FILES["fileToUpload"]["tmp_name"], "r");
     echo fread($content, filesize($fileToUpload));
     $blobClient->createBlockBlob($containerName, $fileToUpload, $content);
@@ -40,65 +54,108 @@ $listBlobsOptions = new ListBlobsOptions();
 $listBlobsOptions->setPrefix("");
 $result = $blobClient->listBlobs($containerName, $listBlobsOptions);
 
+echo "<br>";
+echo "<br>";
+
+echo "<table>";
+echo "<tr>";
+
+echo "<th>File Name</th>";
+echo "<th>URL</th>";
+
+foreach($result->getBlobs() as $blob) {
+    echo "<td>".$blob->getName()."</td>";
+    echo "<td>".$blob->getUrl()."</td></tr>";
+}
+
+echo "</table>";
+
 ?>  
 
-<html>
-
-    <head>
-    <style>
-        th {
-            background-color:#707B7C; border-right:solid 1px black; border-bottom:solid 1px black; font-size:8pt; padding5px;font-family: arial; border-top: solid 1px black; border-left: solid 1px black;
-        }
-        td {
-            border-right:solid 1px black; border-bottom:solid 1px black; font-size:8pt; padding:5px; font-family:arial; border-left:solid 1px black; border-top: solid 1px black; text-align: right;
-        }
-    </style>
-    <title>Upload Photo and Computer Vision Analyze</title>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
-    </head>
-
-    <body>
-        Upload picture that need to be analyzed :
-        <form action="index.php" method="post" enctype="multipart/form-data">
-        <input type="file" name="fileToUpload" accept=".jpeg,.jpg,.png" required="" id="fileToUpload">
-        <input type="submit" name="submit" value="Upload">
-        </form>
-
-        <br>
-        <br>
-
-        <table>
-            <tr>
-                <th>File Name</th>
-                <th>URL</th>
-                <th>Action</th>
-            </tr>
-        
-        <tbody>
-            <?php
-            do {
-                foreach ($result->getBlobs() as $blob) {
-            ?>
-            <tr>
-                <td><?php echo $blob->getName() ?></td>
-                <td><?php echo $blob->getUrl()  ?></td>
-                <td>
-                    <form action="analyze.php" method="post">
-                        <input type="hidden" name="url" value="<?php echo $blob->getUrl()?>">
-                        <input type="submit" name="submit" value="Lihat" class="btn btn-primary">
-                    </form>
-                </td>
-            </tr>
-            <?php
-                }
-                $listBlobsOptions->setContinuationToken($result->getContinuationToken());
-            }
-            while ($result->getContinuationToken());
-            ?>
-        </tbody>
-        </table>
-    </body>
+<script type="text/javascript">
+    function processImage() {
+        // **********************************************
+        // *** Update or verify the following values. ***
+        // **********************************************
+ 
+        // Replace <Subscription Key> with your valid subscription key.
+        var subscriptionKey = "e7cda73397944696b5ff13df3ff95781";
+ 
+        // You must use the same Azure region in your REST API method as you used to
+        // get your subscription keys. For example, if you got your subscription keys
+        // from the West US region, replace "westcentralus" in the URL
+        // below with "westus".
+        //
+        // Free trial subscription keys are generated in the "westus" region.
+        // If you use a free trial subscription key, you shouldn't need to change
+        // this region.
+        var uriBase =
+            "https://southeastasia.api.cognitive.microsoft.com/vision/v2.0/analyze";
+ 
+        // Request parameters.
+        var params = {
+            "visualFeatures": "Categories,Description,Color",
+            "details": "",
+            "language": "en",
+        };
+ 
+        // Display the image.
+        var sourceImageUrl = "<?php echo $url ?>"; 
+        document.querySelector("#sourceImage").src = sourceImageUrl;
+ 
+        // Make the REST API call.
+        $.ajax({
+            url: uriBase + "?" + $.param(params),
+ 
+            // Request headers.
+            beforeSend: function(xhrObj){
+                xhrObj.setRequestHeader("Content-Type","application/json");
+                xhrObj.setRequestHeader(
+                    "Ocp-Apim-Subscription-Key", subscriptionKey);
+            },
+ 
+            type: "POST",
+ 
+            // Request body.
+            data: '{"url": ' + '"' + sourceImageUrl + '"}',
+        })
+ 
+        .done(function(data) {
+            // Show formatted JSON on webpage.
+            $("#responseTextArea").val(JSON.stringify(data, null, 2));
+        })
+ 
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            // Display error message.
+            var errorString = (errorThrown === "") ? "Error. " :
+                errorThrown + " (" + jqXHR.status + "): ";
+            errorString += (jqXHR.responseText === "") ? "" :
+                jQuery.parseJSON(jqXHR.responseText).message;
+            alert(errorString);
+        });
+    };
+</script>
+ 
+<h1>Analyze image:</h1>
+Enter the URL to an image, then click the <strong>Analyze image</strong> button.
+<br><br>
+Image to analyze:
+<input type="text" name="inputImage" id="inputImage"
+    value="http://upload.wikimedia.org/wikipedia/commons/3/3c/Shaki_waterfall.jpg" />
+<button onclick="processImage()">Analyze image</button>
+<br><br>
+<div id="wrapper" style="width:1020px; display:table;">
+    <div id="jsonOutput" style="width:600px; display:table-cell;">
+        Response:
+        <br><br>
+        <textarea id="responseTextArea" class="UIInput"
+                  style="width:580px; height:400px;"></textarea>
+    </div>
+    <div id="imageDiv" style="width:420px; display:table-cell;">
+        Source image:
+        <br><br>
+        <img id="sourceImage" width="400" />
+    </div>
+</div>
+</body>
 </html>
-
-<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-<script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery-slim.min.js"><\/script>')</script>
