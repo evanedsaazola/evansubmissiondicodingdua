@@ -13,18 +13,11 @@ $connectionString = "DefaultEndpointsProtocol=https;AccountName=evansubmissiondu
 
 $blobClient = BlobRestProxy::createBlobService($connectionString);
 
-$createContainerOptions = new CreateContainerOptions();
-$createContainerOptions->setPublicAccess(PublicAccessType::CONTAINER_AND_BLOBS);
-$createContainerOptions->addMetaData("key1", "value1");
-$createContainerOptions->addMetaData("key2", "value2");
-
-$containerName = "evansubmitdua".generateRandomString();
-
-$blobClient->createContainer($containerName, $createContainerOptions);
+$containerName = "evansubmitdua";
 
 if (isset($_POST['submit'])) {
     $fileToUpload = strtolower($_FILES["fileToUpload"]["name"]);
-    $content = fopen($_FILES["fileToUpload"]["tmp_name"], "r");
+    $content = fopen($_FILES["fileToUpload"]["tmp_name"], "r") or die("Unable to open file!");
     $blobClient->createBlockBlob($containerName,$fileToUpload,$content);
     header("Location: index.php");
 }
